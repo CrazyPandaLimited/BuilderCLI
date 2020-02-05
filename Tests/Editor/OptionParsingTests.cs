@@ -17,9 +17,10 @@ namespace CrazyPanda.UnityCore.BuildUtils
             var s = new OptionsBag2();
 
             r.Collect( new[] { s } );
+            var names = r.Select( o => o.Item1 );
 
-            Assert.That( r, Contains.Item( "public_prop" ) );
-            Assert.That( r, Contains.Item( "public_mthd" ) );
+            Assert.That( names, Contains.Item( "public_prop" ) );
+            Assert.That( names, Contains.Item( "public_mthd" ) );
         }
 
         [Test]
@@ -29,9 +30,10 @@ namespace CrazyPanda.UnityCore.BuildUtils
             var s = new OptionsBag2();
 
             r.Collect( new[] { s } );
+            var names = r.Select( o => o.Item1 );
 
-            Assert.That( r, Contains.Item( "private_prop" ) );
-            Assert.That( r, Contains.Item( "private_mthd" ) );
+            Assert.That( names, Contains.Item( "private_prop" ) );
+            Assert.That( names, Contains.Item( "private_mthd" ) );
         }
 
         [Test]
