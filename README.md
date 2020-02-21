@@ -52,7 +52,7 @@
 ### Задание опций
 В общем случае опции передаются через командную строку:
 
-Unity.exe [опции Unity] -executeMethod CLI.Build -option1=true -option2=123 -option3="Path to some folder"
+`Unity.exe [опции Unity] -executeMethod CLI.Build -option1=true -option2=123 -option3="Path to some folder"`
 
 Опции можно указывать в следующих форматах:
 
