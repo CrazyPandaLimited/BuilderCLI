@@ -16,6 +16,12 @@ namespace CrazyPanda.UnityCore.BuildUtils
         public int BundleVersionCode { get; private set; } = PlayerSettings.Android.bundleVersionCode;
 
         /// <summary>
+        /// Использовать собственный KeyStore
+        /// </summary>
+        [Option( "androidUseCustomKeystore" )]
+        public bool UseCustomKeyStore { get; private set; } = PlayerSettings.Android.useCustomKeystore;
+
+        /// <summary>
         /// Имя файла keystore для android сборки. если не задан, используется файл указанный в player settings
         /// </summary>
         [Option( "androidKeystore" )]
@@ -58,41 +64,33 @@ namespace CrazyPanda.UnityCore.BuildUtils
 
             EditorUserBuildSettings.androidBuildSystem = AndroidBuildSystem;
 
-            if( !string.IsNullOrEmpty( AndroidKeyalias ) )
-            {
-                PlayerSettings.Android.keyaliasName = AndroidKeyalias;
-                PlayerSettings.Android.useCustomKeystore = true;
-            }
-
-            if( string.IsNullOrEmpty( PlayerSettings.Android.keyaliasName ) || !PlayerSettings.Android.useCustomKeystore )
-            {
-                PlayerSettings.Android.useCustomKeystore = false;
-                return; // сборка без подписывания
-            }
-
-            if( string.IsNullOrEmpty( AndroidKeyaliasPassword ) )
-            {
-                throw new Exception( "Key password not set!" );
-            }
-
-            PlayerSettings.Android.keyaliasPass = AndroidKeyaliasPassword;
-
-            if( !string.IsNullOrEmpty( AndroidKeystore ) )
+            PlayerSettings.Android.useCustomKeystore = UseCustomKeyStore;
+            if( PlayerSettings.Android.useCustomKeystore )
             {
                 PlayerSettings.Android.keystoreName = AndroidKeystore;
-            }
+                if( !File.Exists( PlayerSettings.Android.keystoreName ) )
+                {
+                    throw new Exception( "Keystore file '" + PlayerSettings.Android.keystoreName + "' is not exists!" );
+                }
 
-            if( !File.Exists( PlayerSettings.Android.keystoreName ) )
-            {
-                throw new Exception( "Keystore file '" + PlayerSettings.Android.keystoreName + "' is not exists!" );
-            }
+                PlayerSettings.Android.keystorePass = AndroidKeystorePassword;
+                if( string.IsNullOrEmpty( PlayerSettings.Android.keystorePass ) )
+                {
+                    throw new Exception( "Keystore password not set!" );
+                }
 
-            if( string.IsNullOrEmpty( AndroidKeystorePassword ) )
-            {
-                throw new Exception( "Keystore password not set!" );
-            }
+                PlayerSettings.Android.keyaliasName = AndroidKeyalias;
+                if( string.IsNullOrEmpty( PlayerSettings.Android.keyaliasName ) )
+                {
+                    throw new Exception( "KeyAlias not set!" );
+                }
 
-            PlayerSettings.Android.keystorePass = AndroidKeystorePassword;
+                PlayerSettings.Android.keyaliasPass = AndroidKeyaliasPassword;
+                if( string.IsNullOrEmpty( PlayerSettings.Android.keyaliasPass ) )
+                {
+                    throw new Exception( "KeyAlias password not set!" );
+                }
+            }
         }
     }
 }
