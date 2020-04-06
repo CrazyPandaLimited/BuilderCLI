@@ -26,7 +26,7 @@ namespace CrazyPanda.UnityCore.BuildUtils
         private List<(string Name, Type Type)> _optionsList;
         private string _searchMask;
 
-        [MenuItem("UnityCore/Build Inspector")]
+        [MenuItem("UnityCore/CLI.Build Inspector")]
         private static void Open()
         {
             GetWindow<BuildInspectorWindow>().Show();
