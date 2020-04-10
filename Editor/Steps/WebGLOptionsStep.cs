@@ -13,10 +13,16 @@ namespace CrazyPanda.UnityCore.BuildUtils
     public class WebGLOptionsStep : IRunPreBuild
     {
         /// <summary>
-        /// уровень поддержки исключений в Web GL
+        /// Уровень поддержки исключений в Web GL
         /// </summary>
         [Option( "webGlExceptionSupport" )]
         public WebGLExceptionSupport WebGLExceptionSupport { get; private set; } = PlayerSettings.WebGL.exceptionSupport;
+
+        /// <summary>
+        /// Имя шаблона Web GL сборки. Задается в формате PROJECT:{Name} (для проектных) или APPLICATION:{Name} (для встроенных)
+        /// </summary>
+        [Option( "webGlTemplate" )]
+        public string WebGLTemplate { get; private set; } = PlayerSettings.WebGL.template;
 
         public virtual void OnPreBuild( IStepLocator locator )
         {
@@ -25,6 +31,11 @@ namespace CrazyPanda.UnityCore.BuildUtils
 
             // Выставляем уровень логгирования для WebGL
             PlayerSettings.WebGL.exceptionSupport = WebGLExceptionSupport;
+
+            if( !WebGLTemplate.StartsWith( "PROJECT:" ) && !WebGLTemplate.StartsWith( "APPLICATION:" ) )
+                throw new ArgumentException( $"webGLTemplate must start with 'PROJECT:' or 'APPLICATION:'" );
+
+            PlayerSettings.WebGL.template = WebGLTemplate;
         }
     }
 }
