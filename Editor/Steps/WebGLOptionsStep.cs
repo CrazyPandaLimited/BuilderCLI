@@ -1,8 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using UnityEditor;
 
 namespace CrazyPanda.UnityCore.BuildUtils
@@ -12,30 +8,49 @@ namespace CrazyPanda.UnityCore.BuildUtils
     /// </summary>
     public class WebGLOptionsStep : IRunPreBuild
     {
+        #region Properties
         /// <summary>
         /// Уровень поддержки исключений в Web GL
         /// </summary>
-        [Option( "webGlExceptionSupport" )]
+        [ Option( "webGlExceptionSupport" ) ]
         public WebGLExceptionSupport WebGLExceptionSupport { get; private set; } = PlayerSettings.WebGL.exceptionSupport;
 
         /// <summary>
         /// Имя шаблона Web GL сборки. Задается в формате PROJECT:{Name} (для проектных) или APPLICATION:{Name} (для встроенных)
         /// </summary>
-        [Option( "webGlTemplate" )]
+        [ Option( "webGlTemplate" ) ]
         public string WebGLTemplate { get; private set; } = PlayerSettings.WebGL.template;
 
+        /// <summary>
+        /// Дефолтная высота для Webgl контейнера
+        /// </summary>
+        [ Option( "defaultWebScreenHeight" ) ]
+        public int DefaultWebScreenHeight { get; private set; } = PlayerSettings.defaultWebScreenHeight;
+
+        /// <summary>
+        /// Дефолтная высота для Webgl контейнера
+        /// </summary>
+        [ Option( "defaultWebScreenWidth" ) ]
+        public int DefaultWebScreenWidth { get; private set; } = PlayerSettings.defaultWebScreenWidth;
+        #endregion
+
+        #region Public Members
         public virtual void OnPreBuild( IStepLocator locator )
         {
-            if( locator.Get<BuildPipelineStep>().BuildTarget != BuildTarget.WebGL )
+            if( locator.Get< BuildPipelineStep >().BuildTarget != BuildTarget.WebGL )
                 return;
 
             // Выставляем уровень логгирования для WebGL
             PlayerSettings.WebGL.exceptionSupport = WebGLExceptionSupport;
 
             if( !WebGLTemplate.StartsWith( "PROJECT:" ) && !WebGLTemplate.StartsWith( "APPLICATION:" ) )
-                throw new ArgumentException( $"webGLTemplate must start with 'PROJECT:' or 'APPLICATION:'" );
+                throw new ArgumentException( "webGLTemplate must start with 'PROJECT:' or 'APPLICATION:'" );
 
             PlayerSettings.WebGL.template = WebGLTemplate;
+
+            PlayerSettings.defaultWebScreenHeight = DefaultWebScreenHeight;
+            PlayerSettings.defaultWebScreenWidth = DefaultWebScreenWidth;
         }
+        #endregion
     }
 }
