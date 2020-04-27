@@ -1,9 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.ExceptionServices;
-using System.Text;
-using System.Threading.Tasks;
+using System.Text.RegularExpressions;
 using UnityEditor;
 using UnityEngine;
 
@@ -225,7 +223,7 @@ namespace CrazyPanda.UnityCore.BuildUtils
                 GUILayout.FlexibleSpace();
                 if( GUILayout.Button( "Run build with options" ) )
                 {
-                    var combinedOptions = _selectedOptions.Select( o => $"-{o.Name}={o.Value}" ).Append( "-showBuiltPlayer=true" );
+                    var combinedOptions = _selectedOptions.Select( o => o.ToString() ).Append( "-showBuiltPlayer=true" );
                     new Builder().BuildGame( combinedOptions );
                 }
 
@@ -233,14 +231,7 @@ namespace CrazyPanda.UnityCore.BuildUtils
                 {
                     var ex = ValidateCommandLine();
 
-                    if( ex == null )
-                    {
-                        EditorUtility.DisplayDialog( "Command line Validation", "Command line parsed successfully!", "Ok" );
-                    }
-                    else
-                    {
-                        EditorUtility.DisplayDialog( "Command line Validation", $"Command line is invalid!\n\n{ex}", "Ok" );
-                    }
+                    DisplayDialog( ex == null ? "Command line parsed successfully!" : $"Command line is invalid!\n\n{ex}");
                 }
 
                 if( GUILayout.Button( "Copy command line" ) )
@@ -249,19 +240,25 @@ namespace CrazyPanda.UnityCore.BuildUtils
 
                     if( ex == null )
                     {
-                        var allArgs = new[] { "-executeMethod CLI.Build" }
+                        var allArgs = new[] { $"-executeMethod CLI.Build" }
                             .Concat( _selectedOptions.Select( o => $"-{o.Name}={o.QuotedValue}" ) );
 
                         var joinedArgs = string.Join( " \\\n", allArgs );
                         GUIUtility.systemCopyBuffer = joinedArgs;
 
-                        EditorUtility.DisplayDialog( "Command line Validation", $"Command line copied to clipboard:\n\n{GUIUtility.systemCopyBuffer}", "Ok" );
+                        DisplayDialog( $"Command line copied to clipboard:\n\n{GUIUtility.systemCopyBuffer}");
                     }
                     else
                     {
-                        EditorUtility.DisplayDialog( "Command line Validation", $"Command line is invalid!\n\n{ex}", "Ok" );
+                        DisplayDialog(  $"Command line is invalid!\n\n{ex}" );
                     }
                 }
+
+                if( GUILayout.Button( "Try to paste command args from buffer" ) )
+                {
+                    TryToSetOptionEntriesFromBuffer();
+                }
+                
                 GUILayout.FlexibleSpace();
             }
         }
@@ -297,13 +294,70 @@ namespace CrazyPanda.UnityCore.BuildUtils
             }
         }
 
+        private void TryToSetOptionEntriesFromBuffer()
+        {
+            var foundEntries = GetCommandLineArgsFromString( GUIUtility.systemCopyBuffer, _optionsList.Select( pair => pair.Name ).ToArray() ).ToArray();
+
+            var thereIsNoAnyEntryToSet = foundEntries.Length == 0;
+
+            if( thereIsNoAnyEntryToSet )
+            {
+                DisplayDialog( "There is no any command arg to paste from buffer" );
+                return;
+            }
+            
+            _selectedOptions.Clear();
+            _selectedOptions.AddRange( foundEntries );
+
+            DisplayDialog( $"Following args were pasted from buffer:\n\n{string.Join( "\n", foundEntries.Select( entry => entry.ToString() ) )}" );
+        }
+
+        private IEnumerable< OptionEntry > GetCommandLineArgsFromString( string argsContent, IReadOnlyCollection< string > availableOptions )
+        {
+            (string argNameGroup, string argContainsQoutesGroup) argNameGroupsData = ("ArgNameGroup", "ArgNameGroupContainsQoutes");
+            (string argNameGroup, string argContainsQoutesGroup) argValueGroupsData = ("ArgValueGroup", "ArgValueGroupContainsQoutes");
+            const string baseArgPatternFormat = "((?<{0}>\"(?<{1}>.*?[^\\\\])\")|(?<{1}>[\\w]*))";
+            var finalPatten = $"(?>-\\s*{string.Format( baseArgPatternFormat, argNameGroupsData.argContainsQoutesGroup,argNameGroupsData.argNameGroup )}((\\s*[\\=]\\s*)|(\\s*))" + 
+                              $"{string.Format( baseArgPatternFormat, argValueGroupsData.argContainsQoutesGroup,argValueGroupsData.argNameGroup )})";
+
+            var parsedArgs = Regex.Matches( argsContent, finalPatten, RegexOptions.Multiline );
+
+            foreach( Match parsedArg in parsedArgs )
+            {
+                var argName = parsedArg.Groups[ argNameGroupsData.argNameGroup ].Value;
+                var argValue = parsedArg.Groups[ argValueGroupsData.argNameGroup ].Value;
+
+                if( !availableOptions.Contains( argName ) )
+                {
+                    continue;
+                }
+
+                yield return new OptionEntry
+                {
+                    Name = argName, 
+                    Value = argValue,
+                    IsQuoteForced = !string.IsNullOrEmpty(parsedArg.Groups[argValueGroupsData.argContainsQoutesGroup].Value)
+                };
+            }
+        }
+
+        private void DisplayDialog( string message )
+        {
+            const string dialogTitle = "Command line Validation";
+            const string buttonCloseTitle = "Ok";
+
+            EditorUtility.DisplayDialog( dialogTitle, message,buttonCloseTitle );
+        }
+        
         [Serializable]
         private class OptionEntry
         {
-            public string Name;
-            public string Value;
+            public string Name = string.Empty;
+            public string Value = string.Empty;
+            public bool IsQuoteForced;
+            public string QuotedValue => Value?.Contains( " " ) == true || IsQuoteForced ? $"\"{Value}\"" : Value ?? "";
 
-            public string QuotedValue => Value?.Contains( " " ) == true ? $"\"{Value}\"" : Value ?? "";
+            public override string ToString() => $"-{Name}={Value}";
         }
     }
 }
