@@ -131,9 +131,13 @@ namespace CrazyPanda.UnityCore.BuildUtils
                     case BuildTarget.StandaloneWindows:
                     case BuildTarget.StandaloneWindows64:
                         return "exe";
+#if UNITY_2019_2_OR_NEWER
+                    case BuildTarget.StandaloneLinux64:
+#else
                     case BuildTarget.StandaloneLinux:
                     case BuildTarget.StandaloneLinux64:
                     case BuildTarget.StandaloneLinuxUniversal:
+#endif
                         return "x86";
                     case BuildTarget.Android:
                         return "apk";
