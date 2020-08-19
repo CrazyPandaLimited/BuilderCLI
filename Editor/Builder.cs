@@ -3,9 +3,12 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
 using UnityEditor;
 using UnityEngine;
+
+[ assembly: InternalsVisibleTo( "UnityCore.BuilderCLI.TestsEditor" ) ]
 
 namespace CrazyPanda.UnityCore.BuildUtils
 {
