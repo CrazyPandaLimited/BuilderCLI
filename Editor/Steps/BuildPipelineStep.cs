@@ -195,6 +195,12 @@ namespace CrazyPanda.UnityCore.BuildUtils
                 opts |= BuildOptions.CompressWithLz4;
             }
 
+#if UNITY_2020_2_OR_NEWER
+            SerializedObject graphicsManager = new SerializedObject(AssetDatabase.LoadAllAssetsAtPath( "ProjectSettings/ProjectSettings.asset")[0]);
+            graphicsManager.FindProperty("overrideDefaultApplicationIdentifier").boolValue = true;
+            graphicsManager.ApplyModifiedProperties();
+#endif            
+            
             // Прописываем bundleId
             PlayerSettings.SetApplicationIdentifier(BuildPipeline.GetBuildTargetGroup(BuildTarget), BundleIdentifier);
 
