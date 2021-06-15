@@ -8,7 +8,6 @@ namespace CrazyPanda.UnityCore.BuildUtils
     /// </summary>
     public class WebGLOptionsStep : IRunPreBuild
     {
-        #region Properties
         /// <summary>
         /// Уровень поддержки исключений в Web GL
         /// </summary>
@@ -32,9 +31,7 @@ namespace CrazyPanda.UnityCore.BuildUtils
         /// </summary>
         [ Option( "defaultWebScreenWidth" ) ]
         public int DefaultWebScreenWidth { get; private set; } = PlayerSettings.defaultWebScreenWidth;
-        #endregion
 
-        #region Public Members
         public virtual void OnPreBuild( IStepLocator locator )
         {
             if( locator.Get< BuildPipelineStep >().BuildTarget != BuildTarget.WebGL )
@@ -51,6 +48,5 @@ namespace CrazyPanda.UnityCore.BuildUtils
             PlayerSettings.defaultWebScreenHeight = DefaultWebScreenHeight;
             PlayerSettings.defaultWebScreenWidth = DefaultWebScreenWidth;
         }
-        #endregion
     }
 }

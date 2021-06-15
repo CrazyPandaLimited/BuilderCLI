@@ -10,11 +10,8 @@ namespace CrazyPanda.UnityCore.BuildUtils
 	[ Serializable ]
 	public class BuildInfo : ScriptableObject
 	{
-		#region Constants
 		public const string BuildInfoPath = "BuildInfo";
-		#endregion
 
-		#region Public Fields
 		/// <summary>
 		/// Id приложения для доступа в runtime (та же что прописана в самом приложении как bundle identifier)
 		/// </summary>
@@ -49,13 +46,9 @@ namespace CrazyPanda.UnityCore.BuildUtils
 		/// Внутреннее имя майлстоуна
 		/// </summary>
 		public string MilestoneCodename;
-		#endregion
 
-		#region Private Fields
 		[ SerializeField ] private long _buildTimestamp;
-		#endregion
 
-		#region Properties
 		/// <summary>
 		/// Являетсья ли версия - девелопмент билдом
 		/// </summary>
@@ -65,9 +58,7 @@ namespace CrazyPanda.UnityCore.BuildUtils
 		/// Информация о дате и времени когда был создан билд (локальное время)
 		/// </summary>
 		public DateTime BuildTimestamp { get { return DateTime.FromFileTime( _buildTimestamp ); } set { _buildTimestamp = value.ToFileTime(); } }
-		#endregion
 
-		#region Public Members
 		/// <summary>
 		/// Загружает из файла
 		/// </summary>
@@ -116,6 +107,5 @@ namespace CrazyPanda.UnityCore.BuildUtils
 			sb.Append( MilestoneCodename );
 			return sb.ToString();
 		}
-		#endregion
 	}
 }
