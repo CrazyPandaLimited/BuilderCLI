@@ -50,6 +50,12 @@ namespace CrazyPanda.UnityCore.BuildUtils
         /// </summary>
         [Option( "androidBuildSystem" )]
         public AndroidBuildSystem AndroidBuildSystem { get; private set; } = EditorUserBuildSettings.androidBuildSystem;
+        
+        /// <summary>
+        /// Собрать Android App Bundle (aab file) вместо apk
+        /// </summary>
+        [Option( "buildAppBundle" )]
+        public bool AndroidBuildAppBundle { get; private set; } = EditorUserBuildSettings.buildAppBundle;
 
         public virtual void OnPreBuild( IStepLocator locator )
         {
@@ -63,7 +69,8 @@ namespace CrazyPanda.UnityCore.BuildUtils
             }
 
             EditorUserBuildSettings.androidBuildSystem = AndroidBuildSystem;
-
+            EditorUserBuildSettings.buildAppBundle = AndroidBuildAppBundle;
+            
             PlayerSettings.Android.useCustomKeystore = UseCustomKeyStore;
             if( PlayerSettings.Android.useCustomKeystore )
             {

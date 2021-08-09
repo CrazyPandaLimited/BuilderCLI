@@ -140,6 +140,10 @@ namespace CrazyPanda.UnityCore.BuildUtils
 #endif
                         return "x86";
                     case BuildTarget.Android:
+                        if (EditorUserBuildSettings.buildAppBundle)
+                        {
+                            return "aab";
+                        }
                         return "apk";
 #if UNITY_2017_3_OR_NEWER
                     case BuildTarget.StandaloneOSX:
