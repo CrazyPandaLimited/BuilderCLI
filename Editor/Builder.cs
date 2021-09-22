@@ -91,7 +91,7 @@ namespace CrazyPanda.UnityCore.BuildUtils
             // check again that we can intantiate the classes
             var instances = types
                 .Where( p => !p.IsAbstract && !p.IsNested && type.IsAssignableFrom( p ) )
-                .Select( x => ( IBuildStep )Activator.CreateInstance( x ) );
+                .Select( x => ( IBuildStep )Activator.CreateInstance( x ) ).ToArray();
 
             return SortSteps( instances );
         }
@@ -101,7 +101,7 @@ namespace CrazyPanda.UnityCore.BuildUtils
         /// </summary>
         /// <param name="steps">Steps to sort</param>
         /// <returns>Ordered build steps</returns>
-        internal static List<IBuildStep> SortSteps( IEnumerable<IBuildStep> steps )
+        internal static List<IBuildStep> SortSteps( IReadOnlyCollection<IBuildStep> steps )
         {
             var rules = new List<(Type before, Type after)>();
             bool hasBuildPipeline = steps.Any( s => s.GetType() == typeof( BuildPipelineStep ) );
@@ -168,7 +168,7 @@ namespace CrazyPanda.UnityCore.BuildUtils
             }
         }
 
-        private static List<T> TopologicalSort<T>( IEnumerable<T> nodes, List<(Type, Type)> edges )
+        private static List<T> TopologicalSort<T>( IReadOnlyCollection<T> nodes, List<(Type, Type)> edges )
         {
             // Empty list that will contain the sorted elements
             var ret = new List<T>();
