@@ -57,6 +57,12 @@ namespace CrazyPanda.UnityCore.BuildUtils
         [Option( "buildAppBundle" )]
         public bool AndroidBuildAppBundle { get; private set; } = EditorUserBuildSettings.buildAppBundle;
 
+        /// <summary>
+        /// Оверрайдить формат текстур для Android
+        /// </summary>
+        [Option( "androidBuildSubtarget" )]
+        public MobileTextureSubtarget AndroidBuildSubtarget { get; private set; } = EditorUserBuildSettings.androidBuildSubtarget;
+
         public virtual void OnPreBuild( IStepLocator locator )
         {
             if( locator.Get<BuildPipelineStep>().BuildTarget != BuildTarget.Android )
@@ -68,6 +74,7 @@ namespace CrazyPanda.UnityCore.BuildUtils
                 PlayerSettings.Android.bundleVersionCode = BundleVersionCode;
             }
 
+            EditorUserBuildSettings.androidBuildSubtarget = AndroidBuildSubtarget;
             EditorUserBuildSettings.androidBuildSystem = AndroidBuildSystem;
             EditorUserBuildSettings.buildAppBundle = AndroidBuildAppBundle;
             
