@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using UnityEditor;
+using UnityEditor.Android;
 
 namespace CrazyPanda.UnityCore.BuildUtils
 {
@@ -26,6 +27,12 @@ namespace CrazyPanda.UnityCore.BuildUtils
         /// </summary>
         [Option( "androidKeystore" )]
         public string AndroidKeystore { get; private set; } = PlayerSettings.Android.keystoreName;
+
+        /// <summary>
+        /// Кастомный путь до папки с грейдл дистрибутивом
+        /// </summary>
+        [Option("gradlePath")]
+        public string GradlePath { get; private set; }
 
         /// <summary>
         /// Пароль для keystore для android сборки
@@ -79,6 +86,12 @@ namespace CrazyPanda.UnityCore.BuildUtils
             EditorUserBuildSettings.buildAppBundle = AndroidBuildAppBundle;
             
             PlayerSettings.Android.useCustomKeystore = UseCustomKeyStore;
+
+            if( !string.IsNullOrEmpty( GradlePath ) )
+            {
+                AndroidExternalToolsSettings.gradlePath = GradlePath;
+            }
+
             if( PlayerSettings.Android.useCustomKeystore )
             {
                 PlayerSettings.Android.keystoreName = AndroidKeystore;
