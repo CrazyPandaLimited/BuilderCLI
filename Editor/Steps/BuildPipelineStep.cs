@@ -45,6 +45,12 @@ namespace CrazyPanda.UnityCore.BuildUtils
         public bool AllowDebugging { get; private set; } = EditorUserBuildSettings.allowDebugging;
 
         /// <summary>
+        /// Билд в режиме сервера
+        /// </summary>
+        [Option( "serverBuild" )]
+        public bool ServerBuild { get; private set; } = EditorUserBuildSettings.enableHeadlessMode;
+
+        /// <summary>
         /// Wait for managed debugger;
         /// </summary>
         [ Option( "waitForManagedDebugger" ) ]
@@ -316,6 +322,11 @@ namespace CrazyPanda.UnityCore.BuildUtils
                 opts |= BuildOptions.CompressWithLz4;
             }
 
+            if( ServerBuild )
+            {
+                opts |= BuildOptions.EnableHeadlessMode;
+            }
+            
 #if UNITY_2020_2_OR_NEWER
             SerializedObject projectSettingsManager = new SerializedObject(AssetDatabase.LoadAllAssetsAtPath( "ProjectSettings/ProjectSettings.asset")[0]);
             projectSettingsManager.FindProperty("overrideDefaultApplicationIdentifier").boolValue = true;
