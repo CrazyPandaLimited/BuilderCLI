@@ -14,6 +14,8 @@ namespace CrazyPanda.UnityCore.BuildUtils
     /// </summary>
     class BuildInspectorWindow : EditorWindow
     {
+        private const string CommandValueSplitSymbol = ",";
+        
         [SerializeField] private List<OptionEntry> _selectedOptions = new List<OptionEntry>();
         private List< IBuildStep > _steps;
         private GUIStyle _centeredLabel;
@@ -21,7 +23,7 @@ namespace CrazyPanda.UnityCore.BuildUtils
         private Exception _collectException;
         private Vector2 _availableOptionsScrollPosition;
         private Vector2 _selectedOptionsScrollPosition;
-        private List<(string Name, Type Type)> _optionsList;
+        private List<OptionsRegistry.Option> _optionsList;
         private string _searchMask;
 
         [MenuItem("UnityCore/CLI.Build Inspector")]
@@ -42,8 +44,7 @@ namespace CrazyPanda.UnityCore.BuildUtils
                 var options = new OptionsRegistry();
                 options.Collect( _steps );
 
-                _optionsList = options.ToList();
-                _optionsList.Sort();
+                _optionsList = options.AvailableOptions.OrderBy( option => option.Name ).ToList();
             }
             catch( Exception e )
             {
@@ -131,15 +132,29 @@ namespace CrazyPanda.UnityCore.BuildUtils
                         {
                             var visibleOptions = string.IsNullOrEmpty( _searchMask ) ? _optionsList : _optionsList.Where( o => o.Name.ToLower().Contains( _searchMask.ToLower() ) );
 
-                            foreach( var (name, type) in visibleOptions )
+                            foreach( var option in visibleOptions )
                             {
                                 using( new GUILayout.HorizontalScope() )
                                 {
-                                    GUILayout.Label( new GUIContent( $"-{name}", $"{type.Name} {name}" ) );
+                                    GUILayout.Label( new GUIContent( $"-{option.Name}", $"{ string.Join(", ",option.Parameters.Select( pair => pair.ToString() )) }" ) );
                                     GUILayout.FlexibleSpace();
                                     if( GUILayout.Button( new GUIContent( "+", $"Add -{name}" ), EditorStyles.miniButton, GUILayout.MaxWidth( 16 ), GUILayout.MaxHeight( 16 ) ) )
                                     {
-                                        _selectedOptions.Add( new OptionEntry() { Name = name } );
+                                        var optionEntry = new OptionEntry()
+                                        {
+                                            Name = option.Name
+                                        };
+                                        
+                                        foreach( var pair in option.Parameters )
+                                        {
+                                            optionEntry.Parameters.Add( new EntryParameter()
+                                            {
+                                                Name = pair.Name,
+                                                Value = pair.DefaultValue
+                                            } );
+                                        }
+                                        
+                                        _selectedOptions.Add( optionEntry );
                                     }
                                 }
                             }
@@ -169,34 +184,43 @@ namespace CrazyPanda.UnityCore.BuildUtils
                         {
                             var oldLabelWidth = EditorGUIUtility.labelWidth;
 
-                            EditorGUIUtility.labelWidth = Mathf.Max( _selectedOptions.Max( o => EditorStyles.label.CalcSize( new GUIContent( $"-{o.Name}=" ) ).x ), 150 );
                             foreach( var option in _selectedOptions.ToList() )
                             {
                                 using( new GUILayout.HorizontalScope() )
                                 {
-                                    var optionLabel = new GUIContent( $"-{option.Name}=" );
-                                    var optionType = _optionsList.Find( p => p.Name == option.Name ).Type;
+                                    var optionSource = _optionsList.Find( p => p.Name == option.Name );
 
-                                    if( optionType == typeof( bool ) )
+                                    var array = option.Parameters.ToArray();
+                                    
+                                    for( var i = 0; i < array.Length; ++i )
                                     {
-                                        bool.TryParse( option.Value, out var boolValue );
-                                        option.Value = EditorGUILayout.Toggle( optionLabel, boolValue ).ToString();
-                                    }
-                                    else if( optionType == typeof( int ) )
-                                    {
-                                        int.TryParse( option.Value, out var intValue );
-                                        option.Value = EditorGUILayout.IntField( optionLabel, intValue ).ToString();
-                                    }
-                                    else if( optionType.IsEnum )
-                                    {
-                                        TryParseEnum( optionType, option.Value, out var enumValue );
-                                        option.Value = EditorGUILayout.EnumPopup( optionLabel, enumValue as Enum, null, true ).ToString();
-                                    }
-                                    else
-                                    {
-                                        option.Value = EditorGUILayout.TextField( optionLabel, option.Value );
-                                    }
+                                        var pair = array[ i ];
 
+                                        var optionLabel = new GUIContent( $"{(i == 0 ? "-" : string.Empty)}{pair.Name}=" );
+                                        var optionType  = optionSource.Parameters.Find( parameter => parameter.Name == pair.Name ).Type;
+                                        EditorGUIUtility.labelWidth = EditorStyles.label.CalcSize( optionLabel ).x;
+                                        
+                                        if( optionType == typeof( bool ) )
+                                        {
+                                            bool.TryParse( pair.Value, out var boolValue );
+                                            pair.Value = EditorGUILayout.Toggle( optionLabel, boolValue ).ToString();
+                                        }
+                                        else if( optionType == typeof( int ) )
+                                        {
+                                            int.TryParse( pair.Value, out var intValue );
+                                            pair.Value = EditorGUILayout.IntField( optionLabel, intValue ).ToString();
+                                        }
+                                        else if( optionType.IsEnum )
+                                        {
+                                            TryParseEnum( optionType, pair.Value, out var enumValue );
+                                            pair.Value = EditorGUILayout.EnumPopup( optionLabel, enumValue as Enum, null, true ).ToString();
+                                        }
+                                        else
+                                        {
+                                            pair.Value = EditorGUILayout.TextField( optionLabel, pair.Value );
+                                        }
+                                    }
+                                    
                                     if( GUILayout.Button( "–", EditorStyles.miniButton, GUILayout.MaxWidth( 16 ), GUILayout.MaxHeight( 16 ) ) )
                                     {
                                         _selectedOptions.Remove( option );
@@ -296,7 +320,7 @@ namespace CrazyPanda.UnityCore.BuildUtils
 
         private void TryToSetOptionEntriesFromBuffer()
         {
-            var foundEntries = GetCommandLineArgsFromString( GUIUtility.systemCopyBuffer, _optionsList.Select( pair => pair.Name ).ToArray() ).ToArray();
+            var foundEntries = GetCommandLineArgsFromString( GUIUtility.systemCopyBuffer ).ToArray();
 
             var thereIsNoAnyEntryToSet = foundEntries.Length == 0;
 
@@ -312,11 +336,11 @@ namespace CrazyPanda.UnityCore.BuildUtils
             DisplayDialog( $"Following args were pasted from buffer:\n\n{string.Join( "\n", foundEntries.Select( entry => entry.ToString() ) )}" );
         }
 
-        private IEnumerable< OptionEntry > GetCommandLineArgsFromString( string argsContent, IReadOnlyCollection< string > availableOptions )
+        private IEnumerable< OptionEntry > GetCommandLineArgsFromString( string argsContent )
         {
             (string argNameGroup, string argContainsQoutesGroup) argNameGroupsData = ("ArgNameGroup", "ArgNameGroupContainsQoutes");
             (string argNameGroup, string argContainsQoutesGroup) argValueGroupsData = ("ArgValueGroup", "ArgValueGroupContainsQoutes");
-            const string baseArgPatternFormat = "((?<{0}>\"(?<{1}>.*?[^\\\\])\")|(?<{1}>[\\w]*))";
+            const string baseArgPatternFormat = "((?<{0}>\"(?<{1}>.*?[^\\\\])\")|(?<{1}>[\\w\\,]*))";
             var finalPatten = $"(?>-\\s*{string.Format( baseArgPatternFormat, argNameGroupsData.argContainsQoutesGroup,argNameGroupsData.argNameGroup )}((\\s*[\\=]\\s*)|(\\s*))" + 
                               $"{string.Format( baseArgPatternFormat, argValueGroupsData.argContainsQoutesGroup,argValueGroupsData.argNameGroup )})";
 
@@ -325,19 +349,33 @@ namespace CrazyPanda.UnityCore.BuildUtils
             foreach( Match parsedArg in parsedArgs )
             {
                 var argName = parsedArg.Groups[ argNameGroupsData.argNameGroup ].Value;
-                var argValue = parsedArg.Groups[ argValueGroupsData.argNameGroup ].Value;
 
-                if( !availableOptions.Contains( argName ) )
+                var availableOption = _optionsList.FirstOrDefault( option => option.Name == argName );
+
+                if( availableOption == null )
                 {
                     continue;
                 }
 
-                yield return new OptionEntry
+                var argValue = parsedArg.Groups[ argValueGroupsData.argNameGroup ].Value;
+                var argValues = argValue.Contains( CommandValueSplitSymbol ) ? argValue.Split( new[] { CommandValueSplitSymbol }, StringSplitOptions.None ) : new[] { argValue };
+                
+                var optionEntry = new OptionEntry
                 {
-                    Name = argName, 
-                    Value = argValue,
-                    IsQuoteForced = !string.IsNullOrEmpty(parsedArg.Groups[argValueGroupsData.argContainsQoutesGroup].Value)
+                    Name = argName,
+                    IsQuoteForced = !string.IsNullOrEmpty( parsedArg.Groups[ argValueGroupsData.argContainsQoutesGroup ].Value )
                 };
+                
+                for( var i = 0; i < argValues.Length; ++i )
+                {
+                    optionEntry.Parameters.Add( new EntryParameter()
+                    {
+                        Name = availableOption.Parameters[i].Name,
+                        Value = argValues[i]
+                    } );
+                }
+                
+                yield return optionEntry;
             }
         }
 
@@ -348,16 +386,26 @@ namespace CrazyPanda.UnityCore.BuildUtils
 
             EditorUtility.DisplayDialog( dialogTitle, message,buttonCloseTitle );
         }
-        
-        [Serializable]
+
+        [ Serializable ]
         private class OptionEntry
         {
+            public List< EntryParameter > Parameters = new List< EntryParameter >();
+
             public string Name = string.Empty;
-            public string Value = string.Empty;
+            public string Value => string.Join( CommandValueSplitSymbol, Parameters.Select( pair => pair.Value ) );
+
             public bool IsQuoteForced;
             public string QuotedValue => Value?.Contains( " " ) == true || IsQuoteForced ? $"\"{Value}\"" : Value ?? "";
 
             public override string ToString() => $"-{Name}={Value}";
+        }
+
+        [ Serializable ]
+        private sealed class EntryParameter
+        {
+            public string Name = string.Empty;
+            public string Value = string.Empty;
         }
     }
 }

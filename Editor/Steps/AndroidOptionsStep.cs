@@ -31,8 +31,32 @@ namespace CrazyPanda.UnityCore.BuildUtils
         /// <summary>
         /// Кастомный путь до папки с грейдл дистрибутивом
         /// </summary>
-        [Option("gradlePath")]
-        public string GradlePath { get; private set; }
+        [ Option( "gradlePath" ) ]
+        public string GradlePath { get; private set; } = AndroidExternalToolsSettings.gradlePath;
+        
+        /// <summary>
+        /// overrides path to jdk
+        /// </summary>
+        [ Option( "JdkRootPath" ) ]
+        public string JdkRootPath { get; private set; } = AndroidExternalToolsSettings.jdkRootPath;
+
+        /// <summary>
+        /// overrides path to android ndk
+        /// </summary>
+        [ Option( "NdkRootPath" ) ]
+        public string NdkRootPath { get; private set; } = AndroidExternalToolsSettings.ndkRootPath;
+
+        /// <summary>
+        /// overrides path to android sdk
+        /// </summary>
+        [ Option( "SdkRootPath" ) ]
+        public string SdkRootPath { get; private set; } = AndroidExternalToolsSettings.sdkRootPath;
+
+        /// <summary>
+        /// overrides max jvm heap size
+        /// </summary>
+        [ Option( "MaxJvmHeapSize" ) ]
+        public int MaxJvmHeapSize { get; private set; } = AndroidExternalToolsSettings.maxJvmHeapSize;
 
         /// <summary>
         /// Пароль для keystore для android сборки
@@ -70,6 +94,50 @@ namespace CrazyPanda.UnityCore.BuildUtils
         [Option( "androidBuildSubtarget" )]
         public MobileTextureSubtarget AndroidBuildSubtarget { get; private set; } = EditorUserBuildSettings.androidBuildSubtarget;
 
+        //override Etc2 fallback
+        [Option("androidEtc2Fallback")]
+        public AndroidETC2Fallback AndroidETC2Fallback { get; private set; } = EditorUserBuildSettings.androidETC2Fallback;
+        
+        //экспортировать сборку как Android проект
+        [ Option( "exportAsGoogleAndroidProject" ) ]
+        public bool ExportAsGoogleAndroidProject { get; private set; } = EditorUserBuildSettings.exportAsGoogleAndroidProject;
+        
+        //Create symbols.zip file
+        [ Option( "androidCreateSymbolsZip" ) ]
+        public bool AndroidCreateSymbolsZip { get; private set; } = EditorUserBuildSettings.androidCreateSymbolsZip;
+        
+        //Split Android binary
+        [ Option( "useAPKExpansionFiles" ) ]
+        public bool UseAPKExpansionFiles { get; private set; } = PlayerSettings.Android.useAPKExpansionFiles;
+
+        //Override Android Min Sdk Version
+        [ Option( "AndroidMinSdkVersion" ) ]
+        public AndroidSdkVersions AndroidMinSdkVersion { get; private set; } = PlayerSettings.Android.minSdkVersion;
+
+        //Override Android Target Sdk Version
+        [ Option( "AndroidTargetSdkVersion" ) ]
+        public AndroidSdkVersions AndroidTargetSdkVersion { get; private set; } = PlayerSettings.Android.targetSdkVersion;
+
+        //Override Android Target Architectures
+        [ Option( "AndroidTargetArchitecture" ) ]
+        public AndroidArchitecture AndroidTargetArchitecture { get; private set; } = PlayerSettings.Android.targetArchitectures;
+
+        //Allows to build apk per target Architecture
+        [ Option( "BuildApkPerCpuArchitecture" ) ]
+        public bool BuildApkPerCpuArchitecture { get; private set; } = PlayerSettings.Android.buildApkPerCpuArchitecture;
+
+        //Override Android Apk Install Location
+        [ Option( "AndroidPreferredInstallLocation" ) ]
+        public AndroidPreferredInstallLocation AndroidPreferredInstallLocation { get; private set; } = PlayerSettings.Android.preferredInstallLocation;
+
+        //Overrides Android Internet Permission
+        [ Option( "AndroidForceInternetPermission" ) ]
+        public bool AndroidForceInternetPermission { get; private set; } = PlayerSettings.Android.forceInternetPermission;
+
+        //Overrides Android SDCard Write Permission
+        [ Option( "AndroidForceSDCardPermission" ) ]
+        public bool AndroidForceSDCardPermission { get; private set; } = PlayerSettings.Android.forceSDCardPermission;
+
         public virtual void OnPreBuild( IStepLocator locator )
         {
             if( locator.Get<BuildPipelineStep>().BuildTarget != BuildTarget.Android )
@@ -80,18 +148,48 @@ namespace CrazyPanda.UnityCore.BuildUtils
             {
                 PlayerSettings.Android.bundleVersionCode = BundleVersionCode;
             }
+            
+            EditorUserBuildSettings.androidETC2Fallback = AndroidETC2Fallback;
+            EditorUserBuildSettings.exportAsGoogleAndroidProject = ExportAsGoogleAndroidProject;
+            EditorUserBuildSettings.androidCreateSymbolsZip = AndroidCreateSymbolsZip;
 
             EditorUserBuildSettings.androidBuildSubtarget = AndroidBuildSubtarget;
             EditorUserBuildSettings.androidBuildSystem = AndroidBuildSystem;
             EditorUserBuildSettings.buildAppBundle = AndroidBuildAppBundle;
             
             PlayerSettings.Android.useCustomKeystore = UseCustomKeyStore;
-
+            
+            PlayerSettings.Android.useAPKExpansionFiles = UseAPKExpansionFiles;
+            PlayerSettings.Android.minSdkVersion = AndroidMinSdkVersion;
+            PlayerSettings.Android.targetSdkVersion = AndroidTargetSdkVersion;
+            PlayerSettings.Android.targetArchitectures = AndroidTargetArchitecture;
+            PlayerSettings.Android.buildApkPerCpuArchitecture = BuildApkPerCpuArchitecture;
+            PlayerSettings.Android.preferredInstallLocation = AndroidPreferredInstallLocation;
+            PlayerSettings.Android.forceInternetPermission = AndroidForceInternetPermission;
+            PlayerSettings.Android.forceSDCardPermission = AndroidForceSDCardPermission;
+            
             if( !string.IsNullOrEmpty( GradlePath ) )
             {
                 AndroidExternalToolsSettings.gradlePath = GradlePath;
             }
 
+            if( !string.IsNullOrEmpty( JdkRootPath ) )
+            {
+                AndroidExternalToolsSettings.jdkRootPath = JdkRootPath;
+            }
+            
+            if( !string.IsNullOrEmpty( NdkRootPath ) )
+            {
+                AndroidExternalToolsSettings.ndkRootPath = NdkRootPath;
+            }
+
+            if( !string.IsNullOrEmpty( SdkRootPath ) )
+            {
+                AndroidExternalToolsSettings.sdkRootPath = SdkRootPath;
+            }
+
+            AndroidExternalToolsSettings.maxJvmHeapSize = MaxJvmHeapSize;
+            
             if( PlayerSettings.Android.useCustomKeystore )
             {
                 PlayerSettings.Android.keystoreName = AndroidKeystore;

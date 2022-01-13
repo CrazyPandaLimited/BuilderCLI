@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 
 namespace CrazyPanda.UnityCore.BuildUtils
 {
@@ -14,14 +15,18 @@ namespace CrazyPanda.UnityCore.BuildUtils
         /// Name that will be used in command line without the leading -
         /// </summary>
         public string OptionName { get; }
+        
+        public IEnumerable< string > ExtraOptionNames { get; }
 
         /// <summary>
         /// Constructor
         /// </summary>
         /// <param name="optionName">Name that will be used in command line without the leading -</param>
-        public OptionAttribute( string optionName )
+        /// <param name="extraOptionNames">Extra parameters</param>
+        public OptionAttribute( string optionName, params string[] extraOptionNames )
         {
             OptionName = optionName;
+            ExtraOptionNames = extraOptionNames;
         }
     }
 }

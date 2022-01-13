@@ -18,7 +18,7 @@ namespace CrazyPanda.UnityCore.BuildUtils
             var s = new OptionsBag2();
 
             r.Collect( new[] { s } );
-            var names = r.Select( o => o.Item1 );
+            var names = r.AvailableOptions.Select( o => o.Name );
 
             Assert.That( names, Contains.Item( "public_prop" ) );
             Assert.That( names, Contains.Item( "public_mthd" ) );
@@ -31,7 +31,7 @@ namespace CrazyPanda.UnityCore.BuildUtils
             var s = new OptionsBag2();
 
             r.Collect( new[] { s } );
-            var names = r.Select( o => o.Item1 );
+            var names = r.AvailableOptions.Select( o => o.Name );
 
             Assert.That( names, Contains.Item( "private_prop" ) );
             Assert.That( names, Contains.Item( "private_mthd" ) );
@@ -157,6 +157,18 @@ namespace CrazyPanda.UnityCore.BuildUtils
             Assert.That( s.EnumProp, Is.EqualTo( BuildTarget.WebGL ) );
         }
 
+        [ TestCase( new object[] { "sss", 4444, "333s" }, ExpectedResult = new object[] { "sss", 4444, "333s" } ) ]
+        [ TestCase( new object[] { "sss", 4444 }, ExpectedResult = new object[] { "sss", 4444, "test_value" } ) ]
+        [ TestCase( new object[] { "sss" }, ExpectedResult = new object[] { "sss", 0, "test_value" } ) ]
+        public IEnumerable<object> ParseMultipleMethodTest( object[] valuesToTest )
+        {
+            var r = new OptionsRegistry();
+            var s = new OptionsBag();
+            r.Collect( new[] { s } );
+            r.ProcessOptions( new[] { $"-mlt_values_step={string.Join( ",", valuesToTest )}" } );
+            return s.MultipleValues;
+        }
+        
         [Test]
         public void ParseEnvVariableOption()
         {
@@ -214,11 +226,14 @@ namespace CrazyPanda.UnityCore.BuildUtils
 
         class OptionsBag : IBuildStep
         {
+            private object[] _multipleValues = Array.Empty< object >();
             [Option( "str" )] public string StringProp { get; set; }
             [Option( "int" )] public int IntProp { get; set; }
             [Option( "flt" )] public float FloatProp { get; set; }
             [Option( "bol" )] public bool BoolProp { get; set; }
             [Option( "enm" )] public BuildTarget EnumProp { get; set; }
+
+            public IEnumerable< object > MultipleValues => _multipleValues;
 
             [Option( "strm" )] public void StringMethod( string val )
                 => StringProp = val;
@@ -230,6 +245,12 @@ namespace CrazyPanda.UnityCore.BuildUtils
                 => BoolProp = val;
             [Option( "enmm" )] public void EnumMethod( BuildTarget val )
                 => EnumProp = val;
+
+            [ Option( "mlt_values_step" ) ] 
+            public void MultipleParametersMethod( string val, int val1 = 0, string val2 = "test_value" )
+            {
+                _multipleValues = new object[] { val, val1, val2 };
+            }
         }
 
         class OptionsBag2 : IBuildStep

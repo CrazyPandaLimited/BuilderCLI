@@ -45,6 +45,12 @@ namespace CrazyPanda.UnityCore.BuildUtils
         public bool AllowDebugging { get; private set; } = EditorUserBuildSettings.allowDebugging;
 
         /// <summary>
+        /// Wait for managed debugger;
+        /// </summary>
+        [ Option( "waitForManagedDebugger" ) ]
+        public bool WaitForManagedDebugger { get; private set; } = EditorUserBuildSettings.waitForManagedDebugger;
+
+        /// <summary>
         /// Добавляет собранный проект к существующему в целевой директории.
         /// </summary>
         [Option( "forceAppendToExistProject" )]
@@ -67,6 +73,107 @@ namespace CrazyPanda.UnityCore.BuildUtils
         /// </summary>
         [Option( "dryRun" )]
         public bool DryRun { get; private set; } = false;
+        
+        //Build with deep profiling support
+        [ Option( "BuildWithDeepProfilingSupport" ) ]
+        public bool BuildWithDeepProfilingSupport { get; private set; } = false;
+
+        /// <summary>
+        /// Scripts only build
+        /// </summary>
+        [ Option( "ScriptsOnlyBuild" ) ]
+        public bool ScriptsOnlyBuild { get; private set; } = false;
+
+        //Scripting configurations
+
+        /// <summary>
+        /// Override Backend implementation
+        /// </summary>
+        [ Option( "ScriptingBackend" ) ]
+        public ScriptingImplementation ScriptingBackend { get; private set; } = PlayerSettings.GetScriptingBackend( GetActiveBuildTargetGroup() );
+
+        /// <summary>
+        /// Override Api Compatibility Level
+        /// </summary>
+        [ Option( "ApiCompatibilityLevel" ) ]
+        public ApiCompatibilityLevel ApiCompatibilityLevel { get; private set; } = PlayerSettings.GetApiCompatibilityLevel( GetActiveBuildTargetGroup() );
+
+        /// <summary>
+        /// Override IL2CPP Compiler options
+        /// </summary>
+        [ Option( "Il2CppCompilerConfiguration" ) ]
+        public Il2CppCompilerConfiguration Il2CppCompilerConfiguration { get; private set; } =
+            PlayerSettings.GetIl2CppCompilerConfiguration( GetActiveBuildTargetGroup() );
+
+        /// <summary>
+        /// Use Incremental GC
+        /// </summary>
+        [Option("UseIncrementalGC")]
+        public bool UseIncrementalGC { get; private set; } = PlayerSettings.gcIncremental;
+        
+        /// <summary>
+        /// Allows to use c# unsafe code
+        /// </summary>
+        [ Option( "AllowUnsafeCode" ) ]
+        public bool AllowUnsafeCode { get; private set; } = PlayerSettings.allowUnsafeCode;
+        
+        //Optimizitations
+        
+        /// <summary>
+        /// Base collisions data into meshes
+        /// </summary>
+        [ Option( "BakeCollisionMeshes" ) ]
+        public bool BakeCollisionMeshes { get; private set; } = PlayerSettings.bakeCollisionMeshes;
+        
+        /// <summary>
+        ///Allows to strip engine code. Used only at IL2CPP 
+        /// </summary>
+        [ Option( "StripEngineCode" ) ]
+        public bool StripEngineCode { get; private set; } = PlayerSettings.stripEngineCode;
+
+        /// <summary>
+        /// Overrides code stripping level
+        /// </summary>
+        [ Option( "CodeStrippingLevel" ) ]
+        public ManagedStrippingLevel CodeStrippingLevel { get; private set; } = PlayerSettings.GetManagedStrippingLevel( GetActiveBuildTargetGroup() );
+
+        /// <summary>
+        /// Removes Unused mesh components from build
+        /// </summary>
+        [ Option( "StripUnusedMeshComponents" ) ]
+        public bool StripUnusedMeshComponents { get; private set; } = PlayerSettings.stripUnusedMeshComponents;
+
+        //Stacktrace
+
+        /// <summary>
+        /// Overrides Error StackTrace LogType
+        /// </summary>
+        [ Option( "ErrorStackTraceLogType" ) ]
+        public StackTraceLogType ErrorStackTraceLogType { get; private set; } = PlayerSettings.GetStackTraceLogType( LogType.Error );
+
+        /// <summary>
+        /// Overrides Assert StackTrace LogType
+        /// </summary>
+        [ Option( "AssertStackTraceLogType" ) ]
+        public StackTraceLogType AssertStackTraceLogType { get; private set; } = PlayerSettings.GetStackTraceLogType( LogType.Assert );
+
+        /// <summary>
+        /// Overrides Exception StackTrace LogType
+        /// </summary>
+        [ Option( "ExceptionStackTraceLogType" ) ]
+        public StackTraceLogType ExceptionStackTraceLogType { get; private set; } = PlayerSettings.GetStackTraceLogType( LogType.Exception );
+
+        /// <summary>
+        /// Overrides Log StackTrace LogType
+        /// </summary>
+        [ Option( "LogStackTraceLogType" ) ]
+        public StackTraceLogType LogStackTraceLogType { get; private set; } = PlayerSettings.GetStackTraceLogType( LogType.Log );
+
+        /// <summary>
+        /// Overrides Log StackTrace LogType
+        /// </summary>
+        [ Option( "WarningStackTraceLogType" ) ]
+        public StackTraceLogType WarningStackTraceLogType { get; private set; } = PlayerSettings.GetStackTraceLogType( LogType.Warning );
 
         public List<string> Scenes { get; private set; } = EditorBuildSettings.scenes.Where( scene => scene.enabled ).Select( scene => scene.path ).ToList();
 
@@ -182,8 +289,18 @@ namespace CrazyPanda.UnityCore.BuildUtils
             if( AllowDebugging )
             {
                 opts |= BuildOptions.AllowDebugging | BuildOptions.ConnectWithProfiler;
-            }
+                
+                if( BuildWithDeepProfilingSupport )
+                {
+                    opts |= BuildOptions.EnableDeepProfilingSupport;
+                }
 
+                if( ScriptsOnlyBuild )
+                {
+                    opts |= BuildOptions.BuildScriptsOnly;
+                }
+            }
+            
             if( ShowBuiltPlayer )
             {
                 opts |= BuildOptions.ShowBuiltPlayer;
@@ -203,11 +320,33 @@ namespace CrazyPanda.UnityCore.BuildUtils
             SerializedObject projectSettingsManager = new SerializedObject(AssetDatabase.LoadAllAssetsAtPath( "ProjectSettings/ProjectSettings.asset")[0]);
             projectSettingsManager.FindProperty("overrideDefaultApplicationIdentifier").boolValue = true;
             projectSettingsManager.ApplyModifiedProperties();
-#endif            
+#endif
+            EditorUserBuildSettings.waitForManagedDebugger = WaitForManagedDebugger;
+            
+            //Scripting options
+            var currentBuildTarget = BuildPipeline.GetBuildTargetGroup( BuildTarget );
+           
+            PlayerSettings.SetScriptingBackend( currentBuildTarget, ScriptingBackend  );
+            PlayerSettings.SetApiCompatibilityLevel( currentBuildTarget, ApiCompatibilityLevel );
+            PlayerSettings.SetIl2CppCompilerConfiguration( currentBuildTarget, Il2CppCompilerConfiguration );
+
+            PlayerSettings.SetManagedStrippingLevel( currentBuildTarget, CodeStrippingLevel );
+            PlayerSettings.stripEngineCode = StripEngineCode;
             
             // Прописываем bundleId
-            PlayerSettings.SetApplicationIdentifier(BuildPipeline.GetBuildTargetGroup(BuildTarget), BundleIdentifier);
+            PlayerSettings.SetApplicationIdentifier( currentBuildTarget, BundleIdentifier );
 
+            PlayerSettings.gcIncremental = UseIncrementalGC;
+            PlayerSettings.allowUnsafeCode = AllowUnsafeCode;
+            PlayerSettings.bakeCollisionMeshes = BakeCollisionMeshes;
+            PlayerSettings.stripUnusedMeshComponents = StripUnusedMeshComponents;
+            
+            PlayerSettings.SetStackTraceLogType( LogType.Assert, AssertStackTraceLogType );
+            PlayerSettings.SetStackTraceLogType( LogType.Error, ErrorStackTraceLogType );
+            PlayerSettings.SetStackTraceLogType( LogType.Exception, ExceptionStackTraceLogType );
+            PlayerSettings.SetStackTraceLogType( LogType.Log, LogStackTraceLogType );
+            PlayerSettings.SetStackTraceLogType( LogType.Warning, WarningStackTraceLogType );
+            
             if( string.IsNullOrEmpty( BuildDir ) )
             {
                 BuildDir = EditorUserBuildSettings.GetBuildLocation( BuildTarget );
@@ -241,7 +380,7 @@ namespace CrazyPanda.UnityCore.BuildUtils
         /// Добавляет сцену в билд.
         /// </summary>
         /// <exception cref="ArgumentNullException"></exception>
-        [Option( "addScene" )]
+        [Option( "addScene", "scenePosition" )]
         public void AddScene( string path, int pos = -1 )
         {
             if( string.IsNullOrEmpty( path ) )
@@ -333,6 +472,11 @@ namespace CrazyPanda.UnityCore.BuildUtils
                 }
             }
             return path;
+        }
+
+        private static BuildTargetGroup GetActiveBuildTargetGroup()
+        {
+            return BuildPipeline.GetBuildTargetGroup( EditorUserBuildSettings.activeBuildTarget );
         }
     }
 }

@@ -12,9 +12,11 @@ namespace CrazyPanda.UnityCore.BuildUtils
     /// <summary>
     /// Collects and parses Options
     /// </summary>
-    class OptionsRegistry : IEnumerable<(string, Type)>
+    class OptionsRegistry
     {
         private List<Option> _options = new List<Option>();
+
+        public IEnumerable< Option > AvailableOptions => _options;
 
         /// <summary>
         /// Регистрирует опцию
@@ -25,9 +27,12 @@ namespace CrazyPanda.UnityCore.BuildUtils
         {
             _options.Add( new Option
             {
+                Parameters = new List< OptionParameter >
+                {
+                    new OptionParameter( optionName, typeof( T ) )
+                },
                 Name = optionName,
-                Setter = x => ConvertValue(x, action.Target, action.Method),
-                Type = typeof( T )
+                Setter = x => ConvertValue( x, action.Target, action.Method ),
             } );
         }
 
@@ -53,9 +58,12 @@ namespace CrazyPanda.UnityCore.BuildUtils
 
                         _options.Add( new Option
                         {
+                            Parameters = new List< OptionParameter >()
+                            {
+                                new OptionParameter(attr.OptionName, prop.PropertyType)  
+                            },
                             Name = attr.OptionName,
                             Setter = x => ConvertValue( x, step, setter ),
-                            Type = prop.PropertyType
                         } );
                     }
                 }
@@ -74,12 +82,23 @@ namespace CrazyPanda.UnityCore.BuildUtils
                         if( parameters.Length > 0 && parameters.Skip( 1 ).Any( p => !p.IsOptional ) )
                             throw new Exception( $"Method {step.GetType().Name}.{method.Name} marked with {nameof( OptionAttribute )} must have optional parameters except first" );
 
-                        _options.Add( new Option
+                        var optionNames = new[] { attr.OptionName }.Concat( attr.ExtraOptionNames ).ToArray();
+
+                        if( optionNames.Length > parameters.Length )
+                            throw new Exception($"Method {step.GetType().Name}.{method.Name} marked with {nameof( OptionAttribute )} has only {parameters.Length} parameters, but you are using {optionNames.Length}");
+                        
+                        var option = new Option
                         {
-                            Name = attr.OptionName,
                             Setter = x => ConvertValue( x, step, method ),
-                            Type = parameters[ 0 ].ParameterType
-                        } );
+                            Name = attr.OptionName
+                        };
+                        
+                        for( var i = 0; i < optionNames.Length; ++i )
+                        {
+                            option.Parameters.Add( new OptionParameter( optionNames[ i ], parameters[ i ].ParameterType, parameters[i].DefaultValue ) );
+                        }
+                        
+                        _options.Add( option );
                     }
                 }
             }
@@ -103,8 +122,7 @@ namespace CrazyPanda.UnityCore.BuildUtils
                         continue;
                     }
 
-                    var val = TryGetValueFromEnvironment( pair[ 1 ].Trim( '"' ) );
-                    ProcessOption( option, val, ret );
+                    ProcessOption( option, pair[ 1 ].Trim( '"' ), ret );
                 }
             }
 
@@ -126,51 +144,52 @@ namespace CrazyPanda.UnityCore.BuildUtils
             return ret;
         }
 
-        public IEnumerator<(string, Type)> GetEnumerator() => _options.Select( o => (o.Name, o.Type) ).GetEnumerator();
-        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
-
         private void ProcessOption( Option option, string val, List<(string, string)> list )
         {
-            val = TryGetValueFromEnvironment( val );
+            var parsedValues = TryGetValuesFromEnvironment( val );
 
-            if( val != null )
+            if( parsedValues.Count == 0 )
             {
-                var name = option.Name;
-                var maskedValue = MaskPassword( name, val );
-                list.Add( (name, maskedValue) );
-
-                try
-                {
-                    option.Setter?.Invoke( val );
-                }
-                catch( Exception e )
-                {
-                    throw new Exception( $"Error parsing option '-{name}={maskedValue}': {e.Message}", e );
-                }
+                return;
+            }
+            
+            var maskedValue  = MaskPassword( option.Name, string.Join( ",", parsedValues ) );
+            list.Add( (option.Name, maskedValue) );
+            
+            try
+            {
+                option.Setter?.Invoke( parsedValues );
+            }
+            catch( Exception e )
+            {
+                throw new Exception( $"Error parsing option '-{option.Name}={maskedValue}': {e.Message}", e );
             }
         }
 
-        private string TryGetValueFromEnvironment( string val )
+        private IReadOnlyList< string > TryGetValuesFromEnvironment( string source )
         {
+            var values = new List< string >();
+            
             // если значение опции - строка вида ${SomeName} или $(SomeName), то подставляем вместо неё значение соответствующей переменной окружения
-            if( val == null )
-                return null;
-
-            var envName = val.Trim();
-            if( (envName.StartsWith( "${" ) && envName.EndsWith( "}" )) ||
-                (envName.StartsWith( "$(" ) && envName.EndsWith( ")" )) )
+            if( source == null )
             {
-                envName = envName.Remove( 0, 2 ); // TrimStart("${")
-                envName = envName.Remove( envName.Length - 1 ); // TrimEnd("}");
+                return values;
             }
 
-            var envVal = Environment.GetEnvironmentVariable( envName );
-            if( envVal != null )
+            foreach( string val in source.Split( ',' ) )
             {
-                val = envVal;
+                var envName = val.Trim();
+                if( (envName.StartsWith( "${" ) && envName.EndsWith( "}" )) ||
+                    (envName.StartsWith( "$(" ) && envName.EndsWith( ")" )) )
+                {
+                    envName = envName.Remove( 0, 2 );               // TrimStart("${")
+                    envName = envName.Remove( envName.Length - 1 ); // TrimEnd("}");
+                }
+
+                values.Add( Environment.GetEnvironmentVariable( envName ) ?? val );
             }
 
-            return val;
+            return values;
         }
 
         private static string MaskPassword( string name, string value )
@@ -178,21 +197,44 @@ namespace CrazyPanda.UnityCore.BuildUtils
             return name.ToLower().Contains( "pass" ) && !string.IsNullOrEmpty( value ) ? new string( '*', value.Length ) : value;
         }
 
-        private void ConvertValue( string value, object target, MethodInfo setter )
+        private void ConvertValue( IReadOnlyCollection< string > values, object target, MethodInfo setter )
         {
             var parameters = setter.GetParameters();
-            var conv = TypeDescriptor.GetConverter( parameters[ 0 ].ParameterType );
-            var convertedValue = conv.ConvertFrom( null, CultureInfo.InvariantCulture, value );
 
-            var args = new object[] { convertedValue }.Concat( Enumerable.Repeat( Type.Missing, parameters.Length - 1 ) ).ToArray();
+            var convertedValues = values.Select( ( value, position ) =>
+            {
+                var conv = TypeDescriptor.GetConverter( parameters[ position ].ParameterType );
+                return conv.ConvertFrom( null, CultureInfo.InvariantCulture, value );
+            } );
+            
+            var args = convertedValues.Concat( Enumerable.Repeat( Type.Missing, parameters.Length - values.Count ) ).ToArray();
             setter.Invoke( target, args );
         }
-
-        private class Option
+        
+        internal sealed class Option
         {
-            public string Name;
-            public Action<string> Setter;
-            public Type Type;
+            public List< OptionParameter > Parameters = new List< OptionParameter >();
+            public Action< IReadOnlyCollection< string > > Setter;
+            public string Name = string.Empty;
+        }
+        
+        internal readonly struct OptionParameter
+        {
+            public readonly string Name;
+            public readonly Type Type;
+            public readonly string DefaultValue;
+            
+            private readonly string _stringValue;
+
+            public OptionParameter( string name, Type type, object defaultValue = null )
+            {
+                Name = name;
+                Type = type;
+                DefaultValue = defaultValue?.ToString() ?? string.Empty;
+                _stringValue = $"{Type} {Name}{(!string.IsNullOrEmpty( DefaultValue ) ? $" = {DefaultValue}" : string.Empty)}";
+            }
+
+            public override string ToString() => _stringValue;
         }
     }
 }
