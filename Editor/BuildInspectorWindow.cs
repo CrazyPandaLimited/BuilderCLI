@@ -130,7 +130,7 @@ namespace CrazyPanda.UnityCore.BuildUtils
                         _availableOptionsScrollPosition = scroll.scrollPosition;
                         using( new GUILayout.VerticalScope() )
                         {
-                            var visibleOptions = string.IsNullOrEmpty( _searchMask ) ? _optionsList : _optionsList.Where( o => o.Name.ToLower().Contains( _searchMask.ToLower() ) );
+                            var visibleOptions = string.IsNullOrEmpty( _searchMask ) ? _optionsList : _optionsList.Where( o => o.Name.ToLowerInvariant().Contains( _searchMask.ToLowerInvariant() ) );
 
                             foreach( var option in visibleOptions )
                             {

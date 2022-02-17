@@ -275,7 +275,7 @@ namespace CrazyPanda.UnityCore.BuildUtils
         private void AppendValue( StringBuilder sb, object obj, string membName )
         {
             var value = (obj ?? "").ToString();
-            if( membName.ToLower().Contains( "pass" ) && !string.IsNullOrEmpty( value ) )
+            if( membName.ToLowerInvariant().Contains( "pass" ) && !string.IsNullOrEmpty( value ) )
             {
                 value = new string( '*', value.Length );
             }

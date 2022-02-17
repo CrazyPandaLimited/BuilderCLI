@@ -24,7 +24,7 @@ namespace CrazyPanda.UnityCore.BuildUtils
             if( string.IsNullOrEmpty( define ) )
                 throw new ArgumentNullException( $"{nameof( define )} can not be null or empty!" );
 
-            define = define.ToUpper();
+            define = define.ToUpperInvariant();
             if( !_addDefines.Contains( define ) )
             {
                 _addDefines.Add( define );
@@ -41,7 +41,7 @@ namespace CrazyPanda.UnityCore.BuildUtils
             if( string.IsNullOrEmpty( define ) )
                 throw new ArgumentNullException( $"{nameof( define )} can not be null or empty!" );
 
-            define = define.ToUpper();
+            define = define.ToUpperInvariant();
             if( !_removeDefines.Contains( define ) )
             {
                 _removeDefines.Add( define );

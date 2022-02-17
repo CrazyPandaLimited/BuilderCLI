@@ -194,7 +194,7 @@ namespace CrazyPanda.UnityCore.BuildUtils
 
         private static string MaskPassword( string name, string value )
         {
-            return name.ToLower().Contains( "pass" ) && !string.IsNullOrEmpty( value ) ? new string( '*', value.Length ) : value;
+            return name.ToLowerInvariant().Contains( "pass" ) && !string.IsNullOrEmpty( value ) ? new string( '*', value.Length ) : value;
         }
 
         private void ConvertValue( IReadOnlyCollection< string > values, object target, MethodInfo setter )

@@ -397,8 +397,8 @@ namespace CrazyPanda.UnityCore.BuildUtils
             if( string.IsNullOrEmpty( path ) )
                 throw new ArgumentNullException( $"{nameof( path )} can not be null or empty!" );
 
-            path = NormalizePath( ResolveScenePath( path ) ).ToLower();
-            var idx = Scenes.FindIndex( x => NormalizePath( x ).ToLower() == path );
+            path = NormalizePath( ResolveScenePath( path ) ).ToLowerInvariant();
+            var idx = Scenes.FindIndex( x => NormalizePath( x ).ToLowerInvariant() == path );
             if( idx != -1 )
             {
                 Scenes.RemoveAt( idx );
@@ -423,8 +423,8 @@ namespace CrazyPanda.UnityCore.BuildUtils
             if( string.IsNullOrEmpty( path ) )
                 throw new ArgumentNullException( $"{nameof( path )} can not be null or empty!" );
 
-            path = NormalizePath( ResolveScenePath( path ) ).ToLower();
-            var idx = Scenes.FindIndex( x => NormalizePath( x ).ToLower() == path );
+            path = NormalizePath( ResolveScenePath( path ) ).ToLowerInvariant();
+            var idx = Scenes.FindIndex( x => NormalizePath( x ).ToLowerInvariant() == path );
             if( idx != -1 )
             {
                 Scenes.RemoveAt( idx );
