@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using UnityEditor;
+using UnityEditor.Build;
 using UnityEngine;
 
 namespace CrazyPanda.UnityCore.BuildUtils
@@ -181,6 +182,13 @@ namespace CrazyPanda.UnityCore.BuildUtils
         [ Option( "WarningStackTraceLogType" ) ]
         public StackTraceLogType WarningStackTraceLogType { get; private set; } = PlayerSettings.GetStackTraceLogType( LogType.Warning );
 
+#if UNITY_2021        
+        /// <summary>
+        /// Options to control code generation for IL2CPP compiler.
+        /// </summary>
+        [ Option( "il2CppCodeGeneration" ) ]
+        public Il2CppCodeGeneration Il2CppCodeGeneration { get; private set; } = EditorUserBuildSettings.il2CppCodeGeneration;
+#endif
         public List<string> Scenes { get; private set; } = EditorBuildSettings.scenes.Where( scene => scene.enabled ).Select( scene => scene.path ).ToList();
 
         /// <summary>
@@ -326,6 +334,10 @@ namespace CrazyPanda.UnityCore.BuildUtils
             {
                 opts |= BuildOptions.EnableHeadlessMode;
             }
+            
+#if UNITY_2021
+            EditorUserBuildSettings.il2CppCodeGeneration = Il2CppCodeGeneration;
+#endif            
             
 #if UNITY_2020_2_OR_NEWER
             SerializedObject projectSettingsManager = new SerializedObject(AssetDatabase.LoadAllAssetsAtPath( "ProjectSettings/ProjectSettings.asset")[0]);
