@@ -188,6 +188,12 @@ namespace CrazyPanda.UnityCore.BuildUtils
         /// </summary>
         [ Option( "il2CppCodeGeneration" ) ]
         public Il2CppCodeGeneration Il2CppCodeGeneration { get; private set; } = EditorUserBuildSettings.il2CppCodeGeneration;
+
+        /// <summary>
+        ///   <para>An enum containing different modes for webgl debug symbols.</para>
+        /// </summary>
+        [ Option( "webGLDebugSymbolMode" ) ]
+        public WebGLDebugSymbolMode WebGLDebugSymbolMode { get; private set; } = PlayerSettings.WebGL.debugSymbolMode;
 #endif
         public List<string> Scenes { get; private set; } = EditorBuildSettings.scenes.Where( scene => scene.enabled ).Select( scene => scene.path ).ToList();
 
@@ -337,6 +343,7 @@ namespace CrazyPanda.UnityCore.BuildUtils
             
 #if UNITY_2021
             EditorUserBuildSettings.il2CppCodeGeneration = Il2CppCodeGeneration;
+            PlayerSettings.WebGL.debugSymbolMode = WebGLDebugSymbolMode;
 #endif            
             
 #if UNITY_2020_2_OR_NEWER
