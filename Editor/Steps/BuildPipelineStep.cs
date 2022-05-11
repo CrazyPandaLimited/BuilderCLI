@@ -402,7 +402,7 @@ namespace CrazyPanda.UnityCore.BuildUtils
 
             if( !DryRun )
             {
-#if UNITY_2021_3_OR_NEWER
+#if UNITY_2021_3_OR_NEWER && UNITY_STANDALONE
                 BuildPlayerOptions buildPlayerOptions = new BuildPlayerOptions 
                 { 
                     scenes = Scenes.ToArray(), 
