@@ -195,6 +195,14 @@ namespace CrazyPanda.UnityCore.BuildUtils
         [ Option( "webGLDebugSymbolMode" ) ]
         public WebGLDebugSymbolMode WebGLDebugSymbolMode { get; private set; } = PlayerSettings.WebGL.debugSymbolMode;
 #endif
+        
+#if UNITY_2021_3_OR_NEWER
+        /// <summary>
+        /// Desktop standalone build subtarget
+        /// </summary>
+        [ Option( "buildSubTarget" ) ]
+        public StandaloneBuildSubtarget BuildSubTarget { get; private set; } = EditorUserBuildSettings.standaloneBuildSubtarget;
+#endif        
         public List<string> Scenes { get; private set; } = EditorBuildSettings.scenes.Where( scene => scene.enabled ).Select( scene => scene.path ).ToList();
 
         /// <summary>
@@ -353,6 +361,9 @@ namespace CrazyPanda.UnityCore.BuildUtils
 #endif
             EditorUserBuildSettings.waitForManagedDebugger = WaitForManagedDebugger;
             
+#if UNITY_2021_3_OR_NEWER
+            EditorUserBuildSettings.standaloneBuildSubtarget = BuildSubTarget;
+#endif
             //Scripting options
             var currentBuildTarget = BuildPipeline.GetBuildTargetGroup( BuildTarget );
            
@@ -391,12 +402,31 @@ namespace CrazyPanda.UnityCore.BuildUtils
 
             if( !DryRun )
             {
+#if UNITY_2021_3_OR_NEWER
+                BuildPlayerOptions buildPlayerOptions = new BuildPlayerOptions 
+                { 
+                    scenes = Scenes.ToArray(), 
+                    locationPathName = BuildFullPath,
+                    target = BuildTarget,
+                    subtarget = ( int ) BuildSubTarget,
+                    options = opts,
+                };
+
+                var report = BuildPipeline.BuildPlayer( buildPlayerOptions );
+                var summary = report.summary;
+
+                if (summary.result != UnityEditor.Build.Reporting.BuildResult.Succeeded)
+                {
+                    throw new Exception( $"Build failed with {report.summary.totalErrors} errors and {report.summary.totalWarnings} warnings" );
+                }
+#else                
                 var report = BuildPipeline.BuildPlayer( Scenes.ToArray(), BuildFullPath, BuildTarget, opts );
 
                 if( report.summary.result != UnityEditor.Build.Reporting.BuildResult.Succeeded )
                 {
                     throw new Exception( $"Build failed with {report.summary.totalErrors} errors and {report.summary.totalWarnings} warnings" );
                 }
+#endif
             }
             else
             {
