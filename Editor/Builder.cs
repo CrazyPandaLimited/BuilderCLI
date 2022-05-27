@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
+using System.Text.RegularExpressions;
 using UnityEditor;
 using UnityEngine;
 
@@ -17,8 +18,10 @@ namespace CrazyPanda.UnityCore.BuildUtils
     /// </summary>
 	public class Builder : IStepLocator
 	{
-		public const string ProjectSettings = @"ProjectSettings/ProjectSettings.asset";
+        public const string ProjectSettings = @"ProjectSettings/ProjectSettings.asset";
 		public const string ProjectSettingsBkup = @"ProjectSettings/ProjectSettings.asset.bak";
+     
+        private static readonly Type _iBuildStepType = typeof( IBuildStep );
 
         private List<IBuildStep> _steps;
 
@@ -27,15 +30,33 @@ namespace CrazyPanda.UnityCore.BuildUtils
         /// </summary>
         /// <exception cref="Exception"></exception>
         /// <exception cref="ArgumentNullException"></exception>
-        public void BuildGame(IEnumerable<string> additionalOptions)
+        public void BuildGame( IEnumerable< string > additionalOptions )
         {
+            BuildGame( Array.Empty< Type >(), additionalOptions );
+        }
+
+        public void BuildGame( IEnumerable< Type > typeToInclude )
+        {
+            BuildGame( typeToInclude, Array.Empty< string >() );
+        }
+
+        public void BuildGame( IEnumerable<Type> typeToInclude, IEnumerable< string > additionalOptions )
+        {
+            foreach( var type in typeToInclude )
+            {
+                if( !_iBuildStepType.IsAssignableFrom( type ) )
+                {
+                    throw new NotSupportedException( $"\"{type.Name}\" must implement \"{_iBuildStepType}\" interface" );
+                }
+            }
+            
             File.Delete( ProjectSettingsBkup );
             File.Copy( ProjectSettings, ProjectSettingsBkup );
             Debug.Log( "Backup ProjectSettings" );
 
             try
             {
-                BuildGameImpl( additionalOptions );
+                BuildGameImpl( typeToInclude, additionalOptions );
                 Debug.Log( "Build completed" );
             }
             finally
@@ -47,9 +68,9 @@ namespace CrazyPanda.UnityCore.BuildUtils
                     File.Move( ProjectSettingsBkup, ProjectSettings );
                     AssetDatabase.ImportAsset( ProjectSettings );
                 }
-            }
+            } 
         }
-
+        
         public T Get< T >()
             where T : class, IBuildStep
         {
@@ -66,7 +87,7 @@ namespace CrazyPanda.UnityCore.BuildUtils
             // we intentionaly ignore nested types, because tests have tons of them
             var types = AppDomain.CurrentDomain.GetAssemblies()
                 .SelectMany( s => s.GetTypes() )
-                .Where( p => !p.IsAbstract && !p.IsNested && typeof( IBuildStep ).IsAssignableFrom( p ) )
+                .Where( p => !p.IsAbstract && !p.IsNested && _iBuildStepType.IsAssignableFrom( p ) )
                 .ToList();
 
             // filter out types that have inheritors in list
@@ -85,12 +106,10 @@ namespace CrazyPanda.UnityCore.BuildUtils
         /// <returns>Ordered build steps</returns>
         internal static List<IBuildStep> BuildStepsList( IEnumerable<Type> types )
         {
-            var type = typeof( IBuildStep );
-
             // this function is internal so may be called without checks
             // check again that we can intantiate the classes
             var instances = types
-                .Where( p => !p.IsAbstract && !p.IsNested && type.IsAssignableFrom( p ) )
+                .Where( p => !p.IsAbstract && !p.IsNested && _iBuildStepType.IsAssignableFrom( p ) )
                 .Select( x => ( IBuildStep )Activator.CreateInstance( x ) ).ToArray();
 
             return SortSteps( instances );
@@ -136,13 +155,14 @@ namespace CrazyPanda.UnityCore.BuildUtils
 
             return TopologicalSort( steps, rules );
         }
-
-        private void BuildGameImpl( IEnumerable<string> additionalOptions )
+        
+        private void BuildGameImpl( IEnumerable<Type> typesToInclude, IEnumerable<string> additionalOptions )
         {
-            _steps = BuildStepsList();
+            _steps = GetFinalSteps( typesToInclude, additionalOptions );
+            
             var registry = new OptionsRegistry();
             registry.Collect( _steps );
-
+            
             var cmdOptions = registry.ProcessOptions( additionalOptions );
             var envOptions = registry.ProcessEnvironment();
 
@@ -158,6 +178,77 @@ namespace CrazyPanda.UnityCore.BuildUtils
                 a.OnPostBuild( this );
         }
 
+        private List< IBuildStep > GetFinalSteps( IEnumerable<Type> typesToInclude, IEnumerable< string > additionalOptions )
+        {
+            const string includeStepsName = "include_steps";
+            const string excludeStepsName = "exclude_steps";
+            
+            string includeStepsValue = string.Empty;
+            string excludeStepsValue = string.Empty;
+
+            var optionsRegistry = new OptionsRegistry();
+            
+            optionsRegistry.Register< string >( includeStepsName, value => includeStepsValue = value );
+            optionsRegistry.Register< string >( excludeStepsName, value => excludeStepsValue = value );
+
+            optionsRegistry.ProcessOptions( additionalOptions );
+            
+            if( !string.IsNullOrEmpty( includeStepsValue ) && !string.IsNullOrEmpty( excludeStepsValue ) )
+            {
+                throw new NotSupportedException($"Using {includeStepsName} and {excludeStepsName} commands at the same time is not supported.");
+            }
+
+            var steps = typesToInclude.Any() ? BuildStepsList( typesToInclude ) : BuildStepsList();
+
+            if( !string.IsNullOrEmpty( includeStepsValue ) )
+            {
+                var stepsToInclude = GetSteps( includeStepsValue ).ToArray();
+                CheckStepsForCorrectData( stepsToInclude, steps );
+                return steps.Where( step => stepsToInclude.Contains( step.GetType().Name ) ).ToList();
+            }
+
+            if( !string.IsNullOrEmpty( excludeStepsValue ) )
+            {
+                var stepsToExclude = GetSteps( excludeStepsValue ).ToArray();
+                CheckStepsForCorrectData( stepsToExclude, steps );
+                return steps.Where( step => !stepsToExclude.Contains( step.GetType().Name ) ).ToList();
+            }
+
+            return steps;
+        }
+
+        private void CheckStepsForCorrectData( IEnumerable< string > generatedSteps, IEnumerable< IBuildStep > allAvailableSteps )
+        {
+            foreach( string generatedStep in generatedSteps )
+            {
+                if( string.IsNullOrEmpty( generatedStep ) )
+                {
+                    throw new ArgumentNullException( nameof(generatedStep), "Step value is null" );
+                }
+                
+                if( !allAvailableSteps.Any( step => step.GetType().Name == generatedStep ))
+                {
+                    throw new NotSupportedException($"It is impossible to use {generatedStep} step, because there is no any available type for it");
+                }
+            }
+        }
+        
+        private IEnumerable< string > GetSteps( string stepsSource )
+        {
+            var steps = stepsSource.Trim().Split( new string[] { " " }, StringSplitOptions.RemoveEmptyEntries );
+
+            if( steps == null || steps.Length == 0 )
+            {
+                yield return stepsSource.Trim();
+                yield break;
+            }
+            
+            foreach( string stepType in steps )
+            {
+                yield return stepType.Trim();
+            }
+        }
+        
         private static IEnumerable<Type> GetTypeHierarchy( IBuildStep step )
         {
             var type = step.GetType();
