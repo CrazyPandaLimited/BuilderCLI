@@ -181,5 +181,26 @@ namespace CrazyPanda.UnityCore.BuildUtils
             Assert.That( aidx, Is.LessThan( bidx ) );
             Assert.That( aidx, Is.LessThan( cidx ) );
         }
+
+        [ Test ]
+        public void SortSteps_Should_Not_Throw_ArgumentException_When_Any_Edge_Left()
+        {
+            Assert.DoesNotThrow( () => Builder.SortSteps( new IBuildStep[] { new TestStep() } ) );
+        }
+        
+        [ RunBefore( typeof( TestStep1 ) ) ]
+        private sealed class TestStep : IRunPreBuild
+        {
+            public void OnPreBuild( IStepLocator locator )
+            {
+            }
+        }
+        
+        private sealed class TestStep1 : IRunPreBuild
+        {
+            public void OnPreBuild( IStepLocator locator )
+            {
+            }
+        }
     }
 }
