@@ -5,7 +5,12 @@ using static UnityEditor.EditorUserBuildSettings;
 
 namespace CrazyPanda.UnityCore.BuildUtils
 {
+    [ RunBefore( typeof( GeneralOptionsStep ) ) ]
+#if UNTITY_ANDROID || UNITY_IOS    
     public sealed class CommonMobileRenderingOptionsStep : IRunPreBuild
+#else
+    public sealed class CommonMobileRenderingOptionsStep : IBuildStep
+#endif    
     {
         /// <summary>
         /// let unity decide, which render to use
@@ -42,11 +47,15 @@ namespace CrazyPanda.UnityCore.BuildUtils
         public void OnPreBuild( IStepLocator locator )
         {
             var activeBuildTarget = locator.Get< BuildPipelineStep >().BuildTarget;
+
+            if( activeBuildTarget != BuildTarget.Android && activeBuildTarget != BuildTarget.iOS )
+                return;
+
             var activeBuildTargetGroup = BuildPipeline.GetBuildTargetGroup( activeBuildTarget );
-            
+
             PlayerSettings.colorSpace = ColorSpace;
             PlayerSettings.enableFrameTimingStats = EnableFrameTimingStats;
-            PlayerSettings.SetUseDefaultGraphicsAPIs( activeBuildTarget, UseAutographicApi);
+            PlayerSettings.SetUseDefaultGraphicsAPIs( activeBuildTarget, UseAutographicApi );
             PlayerSettings.SetMobileMTRendering( activeBuildTargetGroup, MultiThreadRendering );
             PlayerSettings.defaultInterfaceOrientation = InterfaceOrientation;
         }

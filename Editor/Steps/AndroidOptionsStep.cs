@@ -2,13 +2,19 @@
 using System.IO;
 using UnityEditor;
 using UnityEditor.Android;
+using UnityEngine;
 
 namespace CrazyPanda.UnityCore.BuildUtils
 {
     /// <summary>
     /// Handles Android specific options
     /// </summary>
+    [ RunBefore( typeof( GeneralOptionsStep ) ) ]
+#if UNITY_ANDROID
     public class AndroidOptionsStep : IRunPreBuild
+#else
+    public class AndroidOptionsStep : IBuildStep
+#endif    
     {
         /// <summary>
         /// Код Android сборки

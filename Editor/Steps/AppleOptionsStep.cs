@@ -6,8 +6,12 @@ namespace CrazyPanda.UnityCore.BuildUtils
     /// <summary>
     /// Handles iOS specific options
     /// </summary>
-    [ RunBefore( typeof( DefinesStep ) ) ]
+    [ RunBefore( typeof( DefinesStep ), typeof( GeneralOptionsStep ) ) ]
+#if UNITY_IOS
     public class AppleOptionsStep : IRunPreBuild
+#else    
+    public class AppleOptionsStep : IBuildStep
+#endif
     {
         /// <summary>
         /// Код команды Apple

@@ -6,7 +6,12 @@ namespace CrazyPanda.UnityCore.BuildUtils
     /// <summary>
     /// Handles Web GL specific options
     /// </summary>
+    [ RunBefore( typeof( GeneralOptionsStep ) ) ]
+#if UNITY_WEBGL    
     public class WebGLOptionsStep : IRunPreBuild
+#else
+    public class WebGLOptionsStep : IBuildStep
+#endif    
     {
         /// <summary>
         /// Уровень поддержки исключений в Web GL

@@ -7,7 +7,11 @@ using UnityEngine;
 
 namespace CrazyPanda.UnityCore.BuildUtils
 {
+#if UNITY_ANDROID    
     public sealed class AndroidMinificationOptionsStep : IRunPreBuild
+#else
+    public sealed class AndroidMinificationOptionsStep : IBuildStep
+#endif    
     {
         private static readonly string _pathToProguardFile = Path.Combine( Application.dataPath, "Plugins", "Android", "proguard-user.txt" );
         
@@ -36,6 +40,9 @@ namespace CrazyPanda.UnityCore.BuildUtils
 
         public void OnPreBuild( IStepLocator locator )
         {
+            if( locator.Get< BuildPipelineStep >().BuildTarget != BuildTarget.Android )
+                return;
+
 #if UNITY_2020_1_OR_NEWER
             PlayerSettings.Android.minifyDebug = EnableAndroidMinification;
             PlayerSettings.Android.minifyRelease = EnableAndroidMinification;
