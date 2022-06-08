@@ -298,17 +298,7 @@ namespace CrazyPanda.UnityCore.BuildUtils
                 }
             }
 
-            // if graph has edges then
-            if( edges.Any() )
-            {
-                // return error (graph has at least one cycle)
-                throw new ArgumentException( $"Cannot build sorted list around {edges.First().Item1.Name}" );
-            }
-            else
-            {
-                // return L (a topologically sorted order)
-                return ret;
-            }
+            return ret;
         }
 
         private void DumpBuildParameters()
