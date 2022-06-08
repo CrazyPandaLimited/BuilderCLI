@@ -134,7 +134,7 @@ namespace CrazyPanda.UnityCore.BuildUtils
             var c = new C7();
             var s = new IBuildStep[] { b, a, c };
 
-            Assert.That( () => Builder.SortSteps( s ), Throws.ArgumentException );
+            Assert.DoesNotThrow( () => Builder.SortSteps( s ) );
         }
 
         class A8 : IBuildStep { }
@@ -180,28 +180,6 @@ namespace CrazyPanda.UnityCore.BuildUtils
 
             Assert.That( aidx, Is.LessThan( bidx ) );
             Assert.That( aidx, Is.LessThan( cidx ) );
-        }
-
-        [ Test ]
-        public void SortSteps_Should_Not_Throw_ArgumentException_When_Any_Edge_Left()
-        {
-            Assert.DoesNotThrow( () => Builder.SortSteps( new IBuildStep[] { new TestStep1() } ) );
-        }
-        
-        [ RunBefore( typeof( TestStep1 ) ) ]
-        private sealed class TestStep : IRunPreBuild
-        {
-            public void OnPreBuild( IStepLocator locator )
-            {
-            }
-        }
-        
-        [ RunAfter( typeof( TestStep ) ) ]
-        private sealed class TestStep1 : IRunPreBuild
-        {
-            public void OnPreBuild( IStepLocator locator )
-            {
-            }
         }
     }
 }
