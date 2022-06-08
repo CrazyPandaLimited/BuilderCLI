@@ -185,7 +185,7 @@ namespace CrazyPanda.UnityCore.BuildUtils
         [ Test ]
         public void SortSteps_Should_Not_Throw_ArgumentException_When_Any_Edge_Left()
         {
-            Assert.DoesNotThrow( () => Builder.SortSteps( new IBuildStep[] { new TestStep() } ) );
+            Assert.DoesNotThrow( () => Builder.SortSteps( new IBuildStep[] { new TestStep1() } ) );
         }
         
         [ RunBefore( typeof( TestStep1 ) ) ]
@@ -196,6 +196,7 @@ namespace CrazyPanda.UnityCore.BuildUtils
             }
         }
         
+        [ RunAfter( typeof( TestStep ) ) ]
         private sealed class TestStep1 : IRunPreBuild
         {
             public void OnPreBuild( IStepLocator locator )
