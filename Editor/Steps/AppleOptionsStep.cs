@@ -25,6 +25,9 @@ namespace CrazyPanda.UnityCore.BuildUtils
         [Option( "appleAutoSign" )]
         public bool AppleUseAutoSigning { get; private set; } = PlayerSettings.iOS.appleEnableAutomaticSigning;
 
+        [ Option( "appleBuildNumber" ) ]
+        public string AppleBuildNumber { get; private set; } = PlayerSettings.iOS.buildNumber;
+
         /// <summary>
         /// Идентификатор Provision профиля.
         /// </summary>
@@ -63,6 +66,7 @@ namespace CrazyPanda.UnityCore.BuildUtils
             PlayerSettings.iOS.appleEnableAutomaticSigning = AppleUseAutoSigning;
             PlayerSettings.iOS.iOSManualProvisioningProfileID = AppleManualProvisionId;
             PlayerSettings.iOS.iOSManualProvisioningProfileType = AppleManualProvisionType;
+            PlayerSettings.iOS.buildNumber = AppleBuildNumber;
         }
     }
 }
