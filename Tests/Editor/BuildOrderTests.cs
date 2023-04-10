@@ -5,7 +5,6 @@ using UnityEditor;
 
 namespace CrazyPanda.UnityCore.BuildUtils
 {
-    [ Category( "ModuleTests" ), Category( "LocalTests" ) ]
     class BuildOrderTests
     {
         // classes order is maintained alphabetically:
