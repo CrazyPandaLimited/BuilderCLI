@@ -1,7 +1,9 @@
 {
     "name": "UnityCore.BuilderCLI.Editor",
+    "rootNamespace": "",
     "references": [
-        "UnityCore.BuilderCLI"
+        "UnityCore.BuilderCLI",
+        "UnityCore.DeliverySystem.Editor"
     ],
     "includePlatforms": [
         "Editor"
